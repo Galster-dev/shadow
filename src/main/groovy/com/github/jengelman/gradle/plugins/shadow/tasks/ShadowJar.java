@@ -7,6 +7,7 @@ import com.github.jengelman.gradle.plugins.shadow.relocation.Relocator;
 import com.github.jengelman.gradle.plugins.shadow.relocation.SimpleRelocator;
 import com.github.jengelman.gradle.plugins.shadow.transformers.*;
 import org.gradle.api.Action;
+import org.gradle.api.Task;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.DuplicatesStrategy;
 import org.gradle.api.file.FileCollection;
@@ -33,6 +34,8 @@ public class ShadowJar extends Jar implements ShadowSpec {
     private transient DependencyFilter dependencyFilter;
     private boolean enableRelocation;
     private String relocationPrefix = "shadow";
+    private boolean useR8;
+    private R8Configuration r8Configuration;
     private boolean minimizeJar;
     private final transient DependencyFilter dependencyFilterForMinimize;
     private FileCollection toMinimize;
@@ -75,6 +78,22 @@ public class ShadowJar extends Jar implements ShadowSpec {
         });
     }
 
+    @Override
+    public ShadowSpec useR8() {
+        useR8 = true;
+        r8Configuration = new DefaultR8Configuration();
+        return this;
+    }
+
+    @Override
+    public ShadowSpec useR8(Action<R8Configuration> configure) {
+        useR8();
+        if (configure != null) {
+            configure.execute(r8Configuration);
+        }
+        return this;
+    }
+
     public ShadowJar minimize() {
         minimizeJar = true;
         return this;
@@ -103,7 +122,13 @@ public class ShadowJar extends Jar implements ShadowSpec {
     @NotNull
     protected CopyAction createCopyAction() {
         DocumentationRegistry documentationRegistry = getServices().get(DocumentationRegistry.class);
-        final UnusedTracker unusedTracker = minimizeJar ? UnusedTracker.forProject(getApiJars(), getSourceSetsClassesDirs().getFiles(), getToMinimize()) : null;
+        final UnusedTracker unusedTracker =
+            minimizeJar ?
+                (useR8 ?
+                    UnusedTrackerUsingR8.forProject(getProject(), r8Configuration, getApiJars(), getSourceSetsClassesDirs().getFiles(), getToMinimize()) :
+                    UnusedTrackerUsingJDependency.forProject(getApiJars(), getSourceSetsClassesDirs().getFiles(), getToMinimize())) :
+                null;
+
         return new ShadowCopyAction(getArchiveFile().get().getAsFile(), getInternalCompressor(), documentationRegistry,
                 this.getMetadataCharset(), transformers, relocators, getRootPatternSet(), shadowStats,
                 isPreserveFileTimestamps(), minimizeJar, unusedTracker);
@@ -138,8 +163,11 @@ public class ShadowJar extends Jar implements ShadowSpec {
             ConfigurableFileCollection allClassesDirs = getProject().getObjects().fileCollection();
             if (minimizeJar) {
                 for (SourceSet sourceSet : getProject().getExtensions().getByType(SourceSetContainer.class)) {
-                    FileCollection classesDirs = sourceSet.getOutput().getClassesDirs();
-                    allClassesDirs.from(classesDirs);
+                    // do not include test sources
+                    if (!sourceSet.getName().equals(SourceSet.TEST_SOURCE_SET_NAME)) {
+                        FileCollection classesDirs = sourceSet.getOutput().getClassesDirs();
+                        allClassesDirs.from(classesDirs);
+                    }
                 }
             }
             sourceSetsClassesDirs = allClassesDirs.filter(File::isDirectory);

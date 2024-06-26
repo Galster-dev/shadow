@@ -23,6 +23,9 @@ apply from: file('gradle/dependencies.gradle')
 repositories {
     gradlePluginPortal()
     mavenCentral()
+
+    // for r8 dependency
+    google()
 }
 
 tasks.withType(Test).configureEach {

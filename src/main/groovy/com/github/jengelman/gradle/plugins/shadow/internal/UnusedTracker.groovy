@@ -7,40 +7,26 @@ import org.gradle.api.artifacts.ProjectDependency
 import org.gradle.api.artifacts.SelfResolvingDependency
 import org.gradle.api.file.FileCollection
 import org.gradle.api.tasks.InputFiles
-import org.vafer.jdependency.Clazz
-import org.vafer.jdependency.Clazzpath
-import org.vafer.jdependency.ClazzpathUnit
 
-/** Tracks unused classes in the project classpath. */
-class UnusedTracker {
-    private final FileCollection toMinimize
-    private final List<ClazzpathUnit> projectUnits
-    private final Clazzpath cp = new Clazzpath()
+import java.nio.file.Path
 
-    private UnusedTracker(Iterable<File> classDirs, FileCollection classJars, FileCollection toMinimize) {
+/**
+ * A base class for implementations that can track unused classes in the project classpath.
+ */
+abstract class UnusedTracker {
+    protected final FileCollection toMinimize
+
+    protected UnusedTracker(FileCollection toMinimize) {
         this.toMinimize = toMinimize
-        projectUnits = classDirs.collect { cp.addClazzpathUnit(it) }
-        projectUnits.addAll(classJars.collect { cp.addClazzpathUnit(it) })
     }
 
-    Set<String> findUnused() {
-        Set<Clazz> unused = cp.clazzes
-        for (cpu in projectUnits) {
-            unused.removeAll(cpu.clazzes)
-            unused.removeAll(cpu.transitiveDependencies)
-        }
-        return unused.collect { it.name }.toSet()
+    Path getPathToProcessedClass(String classname) {
+        return null
     }
 
-    void addDependency(File jarOrDir) {
-        if (toMinimize.contains(jarOrDir)) {
-            cp.addClazzpathUnit(jarOrDir)
-        }
-    }
+    abstract Set<String> findUnused()
 
-    static UnusedTracker forProject(FileCollection apiJars, Iterable<File> sourceSetsClassesDirs, FileCollection toMinimize) {
-        return new UnusedTracker(sourceSetsClassesDirs, apiJars, toMinimize)
-    }
+    abstract void addDependency(File jarOrDir)
 
     @InputFiles
     FileCollection getToMinimize() {
