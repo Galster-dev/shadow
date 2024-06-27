@@ -12,7 +12,7 @@ import org.gradle.api.file.CopySpec;
 
 import java.lang.reflect.InvocationTargetException;
 
-interface ShadowSpec extends CopySpec {
+public interface ShadowSpec extends CopySpec {
     ShadowSpec useR8();
 
     ShadowSpec useR8(Action<R8Configuration> configure);

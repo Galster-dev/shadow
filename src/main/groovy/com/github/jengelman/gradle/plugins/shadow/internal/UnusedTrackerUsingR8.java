@@ -108,7 +108,6 @@ public class UnusedTrackerUsingR8 extends UnusedTracker {
         });
 
         Path[] configurationFiles = configuration.getConfigurationFiles().stream().map(File::toPath).toArray(Path[]::new);
-        System.out.println(Arrays.toString(configurationFiles));
         if (configurationFiles.length > 0) {
             builder.addProguardConfigurationFiles(configurationFiles);
         }
