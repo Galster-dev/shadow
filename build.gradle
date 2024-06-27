@@ -8,7 +8,7 @@ plugins {
     id 'java-gradle-plugin'
     id 'signing'
     id 'com.gradle.plugin-publish' version '1.1.0'
-    id 'org.ajoberstar.git-publish' version '4.1.1'
+//    id 'org.ajoberstar.git-publish' version '4.1.1'
     id 'com.github.node-gradle.node' version '3.5.1'
 }
 
@@ -17,7 +17,7 @@ apply plugin: ShadowPlugin
 apply from: file('gradle/docs.gradle')
 apply from: file('gradle/publish.gradle')
 apply from: file('gradle/vuepress.gradle')
-apply from: file('gradle/ghPages.gradle')
+//apply from: file('gradle/ghPages.gradle')
 apply from: file('gradle/dependencies.gradle')
 
 repositories {
